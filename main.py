@@ -52,11 +52,19 @@ async def get_orders(
     # Filter requests within the last 10 seconds
     rate_limit_store[x_client_id] = [t for t in user_requests if now - t < WINDOW_SECONDS]
     
+    # if len(rate_limit_store[x_client_id]) >= RATE_LIMIT:
+    #     return Response(
+    #         status_code=429,
+    #         headers={"Retry-After": "10"},
+    #         content="Rate limit exceeded"
+    #     )
+
+    # Rate limiting check
     if len(rate_limit_store[x_client_id]) >= RATE_LIMIT:
-        return Response(
+        raise HTTPException(
             status_code=429,
-            headers={"Retry-After": "10"},
-            content="Rate limit exceeded"
+            detail="Rate limit exceeded",
+            headers={"Retry-After": str(WINDOW_SECONDS)}
         )
     
     rate_limit_store[x_client_id].append(now)
