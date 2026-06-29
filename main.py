@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Optional, List
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -14,6 +15,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After"],
 )
 
 # Constants
@@ -60,13 +62,18 @@ async def get_orders(
     #     )
 
     # Rate limiting check
+    # if len(rate_limit_store[x_client_id]) >= RATE_LIMIT:
+    #     raise HTTPException(
+    #         status_code=429,
+    #         detail="Rate limit exceeded",
+    #         headers={"Retry-After": str(WINDOW_SECONDS)}
+    #     )
     if len(rate_limit_store[x_client_id]) >= RATE_LIMIT:
-        raise HTTPException(
+        return JSONResponse(
             status_code=429,
-            detail="Rate limit exceeded",
+            content={"detail": "Rate limit exceeded"},
             headers={"Retry-After": str(WINDOW_SECONDS)}
-        )
-    
+        )    
     rate_limit_store[x_client_id].append(now)
 
     # 2. Cursor Pagination
